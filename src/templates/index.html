@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python 2.7 Flask App Dashboard</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Local CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <!-- Background Animated Blobs -->
+    <div class="blob blob-purple"></div>
+    <div class="blob blob-cyan"></div>
+    <div class="blob blob-orange"></div>
+
+    <div class="app-container">
+        <!-- Header -->
+        <header class="glass-nav">
+            <div class="logo-container">
+                <div class="logo-pulse"></div>
+                <span class="logo-text">PY2.7 <span class="accent-text">FLASK</span></span>
+            </div>
+            
+            <!-- Navigation Tabs inside nav bar -->
+            <nav class="tab-navigation">
+                <button class="tab-btn active" data-tab="tab-console">控制台專區</button>
+                <button class="tab-btn" data-tab="tab-stocks" id="tab-trigger-stocks">即時股票行情</button>
+                <button class="tab-btn" data-tab="tab-jobs" id="tab-trigger-jobs">下午班企業搜尋</button>
+            </nav>
+
+            <div class="status-indicator">
+                <span class="pulse-dot green"></span>
+                <span class="status-label">SERVER ONLINE</span>
+            </div>
+        </header>
+
+        <!-- Tab 1: Console Area (Existing Hero + Terminal) -->
+        <div id="tab-console" class="tab-content active">
+            <div class="dashboard-grid">
+                <!-- Hero Card -->
+                <section class="glass-card hero-card">
+                    <div class="tag">DEPLOYS SUCCESSFUL</div>
+                    <h1>Python 2.7 輕量級 Flask 伺服器</h1>
+                    <p class="hero-desc">本專案是一個相容於 Python 2.7 環境的 Flask 網頁應用，目前成功部署並運行於 Port <span class="highlight">19191</span>。配備磨砂玻璃 UI 以及動態 API 互動。</p>
+                    <div class="hero-actions">
+                        <button id="btn-fetch" class="btn btn-primary">
+                            <span class="btn-text">發送 API 請求</span>
+                            <svg class="btn-icon" viewBox="0 0 24 24" width="24" height="24">
+                                <path fill="currentColor" d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm-6 8c0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3c-3.31 0-6-2.69-6-6z"/>
+                            </svg>
+                        </button>
+                        <a href="https://flask.palletsprojects.com/en/1.0.x/" target="_blank" class="btn btn-secondary">閱讀 Flask 1.0.x 文件</a>
+                    </div>
+                </section>
+
+                <!-- Server Config Cards -->
+                <div class="config-cards">
+                    <div class="glass-card config-card">
+                        <div class="card-icon">⚡</div>
+                        <div class="card-details">
+                            <h3>執行連接埠 (Port)</h3>
+                            <div class="card-value">19191</div>
+                            <p>透過內置 app.run 設定</p>
+                        </div>
+                    </div>
+                    <div class="glass-card config-card">
+                        <div class="card-icon">🐍</div>
+                        <div class="card-details">
+                            <h3>Python 版本</h3>
+                            <div class="card-value py-version">2.7.x</div>
+                            <p>Legacy Runtime Compatibility</p>
+                        </div>
+                    </div>
+                    <div class="glass-card config-card">
+                        <div class="card-icon">📦</div>
+                        <div class="card-details">
+                            <h3>Flask 框架版本</h3>
+                            <div class="card-value">1.0.4</div>
+                            <p>相容於 Python 2.7 舊版環境</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Interactive Console -->
+                <section class="glass-card terminal-card">
+                    <div class="terminal-header">
+                        <div class="terminal-dots">
+                            <span class="dot red"></span>
+                            <span class="dot yellow"></span>
+                            <span class="dot green"></span>
+                        </div>
+                        <span class="terminal-title">api-console -- bash</span>
+                        <span class="terminal-port">PORT: 19191</span>
+                    </div>
+                    <div class="terminal-body">
+                        <div class="terminal-line"><span class="prompt">$</span> curl -X GET http://127.0.0.1:19191/api/info</div>
+                        <div class="terminal-output" id="terminal-out">
+                            <span class="comment">// 點擊上方「發送 API 請求」按鈕，以獲取伺服器即時 JSON 回應...</span>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+
+        <!-- Tab 2: Stock Market View -->
+        <div id="tab-stocks" class="tab-content">
+            <section class="glass-card stocks-container">
+                <div class="section-header">
+                    <div>
+                        <div class="tag">REALTIME DATA</div>
+                        <h2>即時股票行情看板</h2>
+                        <p class="section-subtitle">每 5 秒自動更新一次價格，點擊按鈕亦可立即更新</p>
+                    </div>
+                    <div class="stocks-actions">
+                        <div class="auto-update-toggle">
+                            <span class="pulse-dot green" id="stock-pulse"></span>
+                            <span id="update-status-text">自動更新中</span>
+                        </div>
+                        <button id="btn-refresh-stocks" class="btn btn-secondary">
+                            <span>立即刷新</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Stock Grid -->
+                <div class="stocks-grid" id="stocks-list">
+                    <div class="loading-spinner">正在取得股市即時數據...</div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Tab 3: Job Shift Finder View -->
+        <div id="tab-jobs" class="tab-content">
+            <section class="glass-card jobs-container">
+                <div class="section-header">
+                    <div>
+                        <div class="tag">FLEXIBLE HOURS</div>
+                        <h2>下午班企業搜尋系統</h2>
+                        <p class="section-subtitle">專為尋找彈性上下班、下午班（如 13:00 - 22:00 等）的求職者設計</p>
+                    </div>
+                </div>
+
+                <!-- Filter and Search Bar -->
+                <div class="search-filter-bar">
+                    <div class="search-input-wrapper">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" id="job-search-input" placeholder="輸入公司名稱、職缺或關鍵字進行搜尋...">
+                    </div>
+                    <div class="filter-group">
+                        <span class="filter-label">時段篩選:</span>
+                        <div class="filter-buttons">
+                            <button class="filter-btn active" data-shift="afternoon">下午班 (預設)</button>
+                            <button class="filter-btn" data-shift="morning">一般日班</button>
+                            <button class="filter-btn" data-shift="night">大夜班</button>
+                            <button class="filter-btn" data-shift="">全部</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Company List Grid -->
+                <div class="companies-grid" id="companies-list">
+                    <div class="loading-spinner">正在搜尋企業職缺資訊...</div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>© 2026 Python 2.7 Flask App Dashboard. Designed with elegance.</p>
+        </footer>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        // --- 1. Tab Navigation Logic ---
+        document.querySelectorAll('.tab-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                // Remove active classes
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                
+                // Add active classes
+                btn.classList.add('active');
+                const targetTab = btn.getAttribute('data-tab');
+                document.getElementById(targetTab).classList.add('active');
+
+                // Trigger specific tab loading if needed
+                if (targetTab === 'tab-stocks') {
+                    fetchStocks();
+                    startStockTimer();
+                } else {
+                    stopStockTimer();
+                }
+
+                if (targetTab === 'tab-jobs') {
+                    fetchCompanies();
+                }
+            });
+        });
+
+        // --- 2. Console Tab Logic (Original Fetch) ---
+        document.getElementById('btn-fetch').addEventListener('click', function() {
+            var out = document.getElementById('terminal-out');
+            out.innerHTML = '<span class="loading">正在請求 API 資料...</span>';
+            
+            setTimeout(function() {
+                fetch('/api/info')
+                    .then(res => res.json())
+                    .then(data => {
+                        out.innerHTML = JSON.stringify(data, null, 4)
+                            .replace(/&/g, '&amp;')
+                            .replace(/</g, '&lt;')
+                            .replace(/>/g, '&gt;')
+                            .replace(/("status": "success")/g, '<span class="json-success">$1</span>')
+                            .replace(/("port": 19191)/g, '<span class="json-highlight">$1</span>');
+                        
+                        if (data.python_version) {
+                            var shortVer = data.python_version.split(' ')[0];
+                            document.querySelectorAll('.py-version').forEach(el => el.textContent = shortVer);
+                        }
+                    })
+                    .catch(err => {
+                        out.innerHTML = '<span class="json-error">連線失敗: ' + err.toString() + '</span>';
+                    });
+            }, 600);
+        });
+
+
+        // --- 3. Stock Market Tab Logic ---
+        let stockTimer = null;
+
+        function startStockTimer() {
+            if (stockTimer) clearInterval(stockTimer);
+            document.getElementById('stock-pulse').classList.add('green');
+            document.getElementById('update-status-text').textContent = '自動更新中';
+            stockTimer = setInterval(fetchStocks, 5000);
+        }
+
+        function stopStockTimer() {
+            if (stockTimer) {
+                clearInterval(stockTimer);
+                stockTimer = null;
+            }
+            document.getElementById('stock-pulse').classList.remove('green');
+            document.getElementById('update-status-text').textContent = '自動更新已暫停';
+        }
+
+        document.getElementById('btn-refresh-stocks').addEventListener('click', function() {
+            fetchStocks();
+            // Reset timer
+            startStockTimer();
+        });
+
+        function fetchStocks() {
+            const container = document.getElementById('stocks-list');
+            fetch('/api/stocks')
+                .then(res => res.json())
+                .then(data => {
+                    container.innerHTML = '';
+                    data.forEach(stock => {
+                        const isUp = stock.change_percent >= 0;
+                        const changeClass = isUp ? 'trend-up' : 'trend-down';
+                        const changeSign = isUp ? '+' : '';
+                        const sparklineHtml = generateSparkline(stock.history, isUp);
+
+                        const card = document.createElement('div');
+                        card.className = 'glass-card stock-card';
+                        card.innerHTML = `
+                            <div class="stock-header">
+                                <div class="stock-symbol-wrapper">
+                                    <span class="stock-symbol">${stock.symbol}</span>
+                                    <span class="stock-name">${stock.name}</span>
+                                </div>
+                                <span class="stock-badge ${changeClass}">${changeSign}${stock.change_percent}%</span>
+                            </div>
+                            <div class="stock-body">
+                                <div class="stock-price">$${stock.price.toFixed(2)}</div>
+                                <div class="stock-chart-wrapper">
+                                    ${sparklineHtml}
+                                </div>
+                            </div>
+                        `;
+                        container.appendChild(card);
+                    });
+                })
+                .catch(err => {
+                    container.innerHTML = `<div class="error-msg">取得股票資料失敗: ${err.toString()}</div>`;
+                });
+        }
+
+        function generateSparkline(history, isUp) {
+            const min = Math.min(...history);
+            const max = Math.max(...history);
+            const range = max - min === 0 ? 1 : max - min;
+            const width = 140;
+            const height = 45;
+            const padding = 3;
+            
+            const points = history.map((val, idx) => {
+                const x = (idx / (history.length - 1)) * width;
+                const y = height - ((val - min) / range) * (height - 2 * padding) - padding;
+                return `${x},${y}`;
+            });
+            
+            const pathD = `M ${points.join(' L ')}`;
+            const areaD = `${pathD} L ${width},${height} L 0,${height} Z`;
+            const strokeColor = isUp ? '#10b981' : '#ef4444';
+            const fillColor = isUp ? 'rgba(16, 185, 129, 0.08)' : 'rgba(239, 68, 68, 0.08)';
+            
+            return `
+                <svg class="sparkline-svg" width="100%" height="${height}" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none">
+                    <path d="${areaD}" fill="${fillColor}" stroke="none" />
+                    <path d="${pathD}" fill="none" stroke="${strokeColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+            `;
+        }
+
+
+        // --- 4. Company Search Tab Logic ---
+        let currentShift = 'afternoon'; // Default to afternoon shift
+        
+        // Search Input Event (Debounced)
+        let searchTimeout = null;
+        document.getElementById('job-search-input').addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(fetchCompanies, 300);
+        });
+
+        // Filter button events
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentShift = btn.getAttribute('data-shift');
+                fetchCompanies();
+            });
+        });
+
+        function fetchCompanies() {
+            const keyword = document.getElementById('job-search-input').value;
+            const container = document.getElementById('companies-list');
+            container.innerHTML = '<div class="loading-spinner">搜尋中，請稍候...</div>';
+
+            let url = `/api/companies?shift=${currentShift}`;
+            if (keyword) {
+                url += `&keyword=${encodeURIComponent(keyword)}`;
+            }
+
+            fetch(url)
+                .then(res => res.json())
+                .then(data => {
+                    container.innerHTML = '';
+                    if (data.length === 0) {
+                        container.innerHTML = `
+                            <div class="empty-state">
+                                <h3>沒有找到符合篩選條件的企業</h3>
+                                <p>嘗試更換時段標籤，或清除搜尋關鍵字</p>
+                            </div>
+                        `;
+                        return;
+                    }
+
+                    data.forEach(c => {
+                        let shiftLabel = '一般日班';
+                        let badgeClass = 'badge-morning';
+                        if (c.shift === 'afternoon') {
+                            shiftLabel = '下午班';
+                            badgeClass = 'badge-afternoon';
+                        } else if (c.shift === 'night') {
+                            shiftLabel = '大夜班';
+                            badgeClass = 'badge-night';
+                        }
+
+                        const card = document.createElement('div');
+                        card.className = 'glass-card company-card';
+                        card.innerHTML = `
+                            <div class="company-card-header">
+                                <span class="industry-badge">${c.industry}</span>
+                                <span class="shift-badge ${badgeClass}">${shiftLabel} (${c.hours})</span>
+                            </div>
+                            <h4 class="company-job-title">${c.title}</h4>
+                            <div class="company-name-text">${c.name}</div>
+                            <p class="company-description">${c.desc}</p>
+                            <div class="company-card-footer">
+                                <span class="location-text">📍 ${c.location}</span>
+                            </div>
+                        `;
+                        container.appendChild(card);
+                    });
+                })
+                .catch(err => {
+                    container.innerHTML = `<div class="error-msg">取得企業資料失敗: ${err.toString()}</div>`;
+                });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+# Python 2.7 compatible versions
+Flask==1.0.4; python_version < '3.0'
+Werkzeug==0.16.1; python_version < '3.0'
+Jinja2==2.11.3; python_version < '3.0'
+itsdangerous==1.1.0; python_version < '3.0'
+click==7.1.2; python_version < '3.0'
+MarkupSafe==1.1.1; python_version < '3.0'
+
+# Python 3 compatible versions
+Flask>=2.0.0; python_version >= '3.0'

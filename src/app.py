@@ -163,4 +163,4 @@ if __name__ == '__main__':
     print("  Starting Flask application on port 19191...     ")
     print("  Access it at http://127.0.0.1:19191/            ")
     print("==================================================")
-    app.run(host='0.0.0.0', port=19191, debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)

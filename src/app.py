@@ -4,6 +4,28 @@ import datetime
 import sys
 import random
 
+# Load environment variables and check for AWS S3 modules
+HAS_S3 = False
+s3_client = None
+S3_BUCKET_NAME = None
+AWS_REGION = 'us-east-1'
+
+try:
+    import os
+    from dotenv import load_dotenv
+    import boto3
+    load_dotenv()
+    
+    S3_BUCKET_NAME = os.environ.get('S3_BUCKET_NAME')
+    AWS_REGION = os.environ.get('AWS_REGION', 'us-east-1')
+    
+    # Initialize boto3 S3 client using default credential chain
+    s3_client = boto3.client('s3', region_name=AWS_REGION)
+    HAS_S3 = True
+except Exception as e:
+    # Print error but allow app to start for backward compatibility / development without S3
+    print("Warning: AWS S3 initialization disabled or failed - {}".format(str(e)))
+
 app = Flask(__name__)
 
 # 模擬股票基礎資料
@@ -157,6 +179,97 @@ def get_companies():
         filtered.append(c)
         
     return jsonify(filtered)
+
+@app.route('/api/s3/config', methods=['GET'])
+def get_s3_config():
+    aws_keys_present = False
+    if HAS_S3:
+        try:
+            import os
+            aws_keys_present = bool(os.environ.get('AWS_ACCESS_KEY_ID') and os.environ.get('AWS_SECRET_ACCESS_KEY'))
+        except:
+            pass
+    return jsonify({
+        "has_s3_module": HAS_S3,
+        "bucket_name": S3_BUCKET_NAME or "",
+        "region": AWS_REGION,
+        "keys_configured_locally": aws_keys_present,
+        "s3_client_available": s3_client is not None
+    })
+
+@app.route('/api/s3/upload', methods=['POST'])
+def upload_s3_file():
+    if not HAS_S3 or not s3_client:
+        return jsonify({"status": "error", "message": "S3 module or client is not available"}), 500
+    
+    if not S3_BUCKET_NAME:
+        return jsonify({"status": "error", "message": "S3_BUCKET_NAME environment variable is not configured"}), 400
+        
+    if 'file' not in request.files:
+        return jsonify({"status": "error", "message": "No file part in the request"}), 400
+        
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({"status": "error", "message": "No selected file"}), 400
+        
+    filename = file.filename
+    logs = []
+    
+    # Step 1: Initialize S3 client log
+    logs.append("$ Initializing boto3.client('s3', region_name='{}')...".format(AWS_REGION))
+    logs.append("S3 client is initialized using AWS default credentials provider chain.")
+    
+    # Step 2: Upload File
+    logs.append("$ s3_client.upload_fileobj(file, bucket='{}', key='{}')...".format(S3_BUCKET_NAME, filename))
+    try:
+        s3_client.upload_fileobj(file, S3_BUCKET_NAME, filename)
+        logs.append("File uploaded successfully to S3 bucket.")
+    except Exception as e:
+        logs.append("Error: Upload failed - {}".format(str(e)))
+        return jsonify({"status": "error", "logs": logs, "message": str(e)}), 500
+        
+    # Step 3: Verification (head_object)
+    logs.append("$ s3_client.head_object(Bucket='{}', Key='{}')...".format(S3_BUCKET_NAME, filename))
+    try:
+        response = s3_client.head_object(Bucket=S3_BUCKET_NAME, Key=filename)
+        size_bytes = response.get('ContentLength', 0)
+        last_mod = response.get('LastModified')
+        last_mod_str = last_mod.strftime('%Y-%m-%d %H:%M:%S') if last_mod else 'unknown'
+        logs.append("S3 verified: File found! ContentLength = {} bytes, LastModified = {}.".format(size_bytes, last_mod_str))
+        return jsonify({
+            "status": "success",
+            "filename": filename,
+            "logs": logs,
+            "message": "File successfully uploaded and verified to exist in S3!"
+        })
+    except Exception as e:
+        logs.append("Verification failed: head_object returned an error - {}".format(str(e)))
+        return jsonify({
+            "status": "warning",
+            "logs": logs,
+            "message": "Upload succeeded, but verification failed: {}".format(str(e))
+        })
+
+@app.route('/api/s3/list', methods=['GET'])
+def list_s3_files():
+    if not HAS_S3 or not s3_client or not S3_BUCKET_NAME:
+        return jsonify([])
+        
+    try:
+        response = s3_client.list_objects_v2(Bucket=S3_BUCKET_NAME, MaxKeys=50)
+        files = []
+        if 'Contents' in response:
+            for obj in response['Contents']:
+                files.append({
+                    "key": obj['Key'],
+                    "size": obj['Size'],
+                    "last_modified": obj['LastModified'].strftime('%Y-%m-%d %H:%M:%S')
+                })
+        # Sort by last modified descending
+        files.sort(key=lambda x: x['last_modified'], reverse=True)
+        return jsonify(files)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
     print("==================================================")

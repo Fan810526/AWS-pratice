@@ -28,6 +28,7 @@
                 <button class="tab-btn active" data-tab="tab-console">控制台專區</button>
                 <button class="tab-btn" data-tab="tab-stocks" id="tab-trigger-stocks">即時股票行情</button>
                 <button class="tab-btn" data-tab="tab-jobs" id="tab-trigger-jobs">下午班企業搜尋</button>
+                <button class="tab-btn" data-tab="tab-s3" id="tab-trigger-s3">AWS S3 上傳驗證</button>
             </nav>
 
             <div class="status-indicator">
@@ -166,6 +167,82 @@
             </section>
         </div>
 
+        <!-- Tab 4: AWS S3 Upload & Verification View -->
+        <div id="tab-s3" class="tab-content">
+            <div class="dashboard-grid">
+                <!-- S3 Configuration & Upload Card -->
+                <section class="glass-card s3-card">
+                    <div class="tag">AWS INTEGRATION</div>
+                    <h2>AWS S3 檔案上傳驗證</h2>
+                    <p class="section-subtitle">透過 boto3 上傳檔案至指定的 S3 Bucket，上傳完畢後會立即執行 API 驗證檔案是否存在。</p>
+                    
+                    <!-- S3 Config Status Info -->
+                    <div class="config-cards" style="margin-top: 1.5rem; margin-bottom: 1.5rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                        <div class="glass-card config-card" style="padding: 1rem; border-radius: 12px; margin: 0; display: flex; align-items: center; gap: 1rem;">
+                            <div class="card-icon" style="font-size: 1.25rem; width: 35px; height: 35px; display: flex; align-items: center; justify-content: center; border-radius: 8px;">🪣</div>
+                            <div class="card-details">
+                                <h3>S3 BUCKET</h3>
+                                <div class="card-value" id="s3-bucket-name" style="font-size: 1rem; word-break: break-all;">未設定</div>
+                                <p id="s3-bucket-status" style="font-size: 0.7rem;">讀取中...</p>
+                            </div>
+                        </div>
+                        <div class="glass-card config-card" style="padding: 1rem; border-radius: 12px; margin: 0; display: flex; align-items: center; gap: 1rem;">
+                            <div class="card-icon" style="font-size: 1.25rem; width: 35px; height: 35px; display: flex; align-items: center; justify-content: center; border-radius: 8px;">🌐</div>
+                            <div class="card-details">
+                                <h3>AWS REGION</h3>
+                                <div class="card-value" id="s3-region-name" style="font-size: 1rem;">-</div>
+                                <p style="font-size: 0.7rem;">S3 預設區域</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- File Upload Form -->
+                    <form id="s3-upload-form" style="display: flex; flex-direction: column; gap: 1rem;">
+                        <div style="border: 2px dashed var(--border-card); border-radius: 12px; padding: 2rem; text-align: center; cursor: pointer; transition: all 0.2s;" id="drop-zone">
+                            <input type="file" id="s3-file-input" style="display: none;" name="file" required>
+                            <span style="font-size: 2.5rem; display: block; margin-bottom: 0.5rem;">📁</span>
+                            <span id="drop-zone-text" style="color: var(--text-secondary); font-size: 0.95rem;">點擊此處或拖曳檔案至此進行上傳</span>
+                        </div>
+                        <button type="submit" id="btn-s3-upload" class="btn btn-primary" style="align-self: flex-start;" disabled>
+                            <span class="btn-text">上傳並驗證是否存在</span>
+                        </button>
+                    </form>
+                </section>
+
+                <!-- S3 File List Panel -->
+                <section class="glass-card s3-files-card">
+                    <div class="section-header" style="border-bottom: none; padding-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <h3 style="font-size: 1.2rem; font-weight: 700;">S3 桶內最近上傳物件</h3>
+                            <p class="section-subtitle" style="font-size: 0.8rem;">最多顯示最近 50 筆檔案</p>
+                        </div>
+                        <button id="btn-refresh-s3-list" class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.75rem; border-radius: 8px;">
+                            <span>重新整理</span>
+                        </button>
+                    </div>
+                    <div style="max-height: 250px; overflow-y: auto; margin-top: 1rem; border: 1px solid var(--border-card); border-radius: 12px; background: rgba(0,0,0,0.15);" id="s3-files-container">
+                        <div class="loading-spinner" style="padding: 2rem 0; font-size: 0.9rem;">讀取中...</div>
+                    </div>
+                </section>
+
+                <!-- S3 Action Console Log -->
+                <section class="glass-card terminal-card" style="grid-column: 1 / 3;">
+                    <div class="terminal-header">
+                        <div class="terminal-dots">
+                            <span class="dot red"></span>
+                            <span class="dot yellow"></span>
+                            <span class="dot green"></span>
+                        </div>
+                        <span class="terminal-title">aws-s3-actions -- console</span>
+                        <span class="terminal-port" id="console-s3-status" style="background: rgba(16,185,129,0.15); color: #10b981; border-color: rgba(16,185,129,0.3);">ACTIVE</span>
+                    </div>
+                    <div class="terminal-body" id="s3-terminal-out">
+                        <span class="comment">// 在左側選擇檔案並點擊「上傳並驗證」，此處將以安全日誌輸出 AWS SDK 互動與 S3 存在性驗證歷程...</span>
+                    </div>
+                </section>
+            </div>
+        </div>
+
         <!-- Footer -->
         <footer class="footer">
             <p>© 2026 Python 2.7 Flask App Dashboard. Designed with elegance.</p>
@@ -196,6 +273,11 @@
 
                 if (targetTab === 'tab-jobs') {
                     fetchCompanies();
+                }
+
+                if (targetTab === 'tab-s3') {
+                    loadS3Config();
+                    fetchS3Files();
                 }
             });
         });
@@ -394,6 +476,235 @@
                     container.innerHTML = `<div class="error-msg">取得企業資料失敗: ${err.toString()}</div>`;
                 });
         }
+
+        // --- 5. AWS S3 Tab Logic ---
+        let s3Config = null;
+
+        function loadS3Config() {
+            const bucketVal = document.getElementById('s3-bucket-name');
+            const regionVal = document.getElementById('s3-region-name');
+            const statusLabel = document.getElementById('s3-bucket-status');
+            const uploadBtn = document.getElementById('btn-s3-upload');
+            const consoleStatus = document.getElementById('console-s3-status');
+
+            fetch('/api/s3/config')
+                .then(res => res.json())
+                .then(data => {
+                    s3Config = data;
+                    if (data.has_s3_module && data.s3_client_available && data.bucket_name) {
+                        bucketVal.textContent = data.bucket_name;
+                        bucketVal.style.color = '#ffffff';
+                        regionVal.textContent = data.region;
+                        
+                        statusLabel.textContent = data.keys_configured_locally ? '已偵測到本地金鑰' : '已就緒 (採用預設憑證鏈/IAM)';
+                        statusLabel.style.color = '#10b981';
+                        
+                        consoleStatus.textContent = "CONNECTED";
+                        consoleStatus.style.background = "rgba(16,185,129,0.15)";
+                        consoleStatus.style.color = "#10b981";
+                        consoleStatus.style.borderColor = "rgba(16,185,129,0.3)";
+                        
+                        checkFileSelected();
+                    } else {
+                        bucketVal.textContent = data.bucket_name || "未設定 (請配置 .env)";
+                        bucketVal.style.color = '#ef4444';
+                        regionVal.textContent = data.region || '-';
+                        
+                        if (!data.has_s3_module) {
+                            statusLabel.textContent = '模組載入失敗 (未安裝 boto3)';
+                        } else if (!data.bucket_name) {
+                            statusLabel.textContent = '請在 .env 中設定 S3_BUCKET_NAME';
+                        } else {
+                            statusLabel.textContent = 'AWS 用戶端初始化失敗';
+                        }
+                        statusLabel.style.color = '#ef4444';
+                        
+                        consoleStatus.textContent = "DISCONNECTED";
+                        consoleStatus.style.background = "rgba(239,68,68,0.15)";
+                        consoleStatus.style.color = "#ef4444";
+                        consoleStatus.style.borderColor = "rgba(239,68,68,0.3)";
+                        
+                        uploadBtn.disabled = true;
+                    }
+                })
+                .catch(err => {
+                    statusLabel.textContent = '讀取設定失敗: ' + err.toString();
+                    statusLabel.style.color = '#ef4444';
+                });
+        }
+
+        // File Selection/Drop logic
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('s3-file-input');
+        const dropZoneText = document.getElementById('drop-zone-text');
+
+        dropZone.addEventListener('click', () => fileInput.click());
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.style.borderColor = 'var(--accent-blue)';
+            dropZone.style.background = 'rgba(0, 242, 254, 0.05)';
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.style.borderColor = 'var(--border-card)';
+            dropZone.style.background = 'transparent';
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.style.borderColor = 'var(--border-card)';
+            dropZone.style.background = 'transparent';
+            if (e.dataTransfer.files.length > 0) {
+                fileInput.files = e.dataTransfer.files;
+                handleFileSelected();
+            }
+        });
+
+        fileInput.addEventListener('change', handleFileSelected);
+
+        function handleFileSelected() {
+            if (fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+                dropZoneText.innerHTML = `已選擇檔案: <strong style="color:var(--accent-blue);">${file.name}</strong> (${(file.size / 1024).toFixed(2)} KB)`;
+                checkFileSelected();
+            }
+        }
+
+        function checkFileSelected() {
+            const uploadBtn = document.getElementById('btn-s3-upload');
+            if (fileInput.files.length > 0 && s3Config && s3Config.s3_client_available && s3Config.bucket_name) {
+                uploadBtn.disabled = false;
+            } else {
+                uploadBtn.disabled = true;
+            }
+        }
+
+        // S3 list files
+        function fetchS3Files() {
+            const container = document.getElementById('s3-files-container');
+            container.innerHTML = '<div class="loading-spinner" style="padding:2rem 0; font-size:0.9rem;">正在取得 S3 物件清單...</div>';
+
+            fetch('/api/s3/list')
+                .then(res => res.json())
+                .then(data => {
+                    container.innerHTML = '';
+                    if (data.error) {
+                        container.innerHTML = `<div style="padding:1rem; color:#ef4444; font-size:0.85rem; text-align:center;">無存取權限或讀取錯誤: ${data.error}</div>`;
+                        return;
+                    }
+                    if (data.length === 0) {
+                        container.innerHTML = '<div style="padding:2rem 0; color:var(--text-muted); font-size:0.85rem; text-align:center;">此 Bucket 中目前沒有任何檔案</div>';
+                        return;
+                    }
+
+                    const listTable = document.createElement('table');
+                    listTable.style.width = '100%';
+                    listTable.style.borderCollapse = 'collapse';
+                    listTable.style.fontSize = '0.85rem';
+                    listTable.style.textAlign = 'left';
+
+                    listTable.innerHTML = `
+                        <thead>
+                            <tr style="border-bottom:1px solid var(--border-card); background:rgba(0,0,0,0.2);">
+                                <th style="padding:0.75rem 1rem; color:var(--text-secondary);">檔案名稱 (Key)</th>
+                                <th style="padding:0.75rem 1rem; color:var(--text-secondary);">大小 (Size)</th>
+                                <th style="padding:0.75rem 1rem; color:var(--text-secondary);">最後修改時間</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    `;
+
+                    const tbody = listTable.querySelector('tbody');
+                    data.forEach((file, idx) => {
+                        const tr = document.createElement('tr');
+                        tr.style.borderBottom = idx === data.length - 1 ? 'none' : '1px solid rgba(255,255,255,0.03)';
+                        tr.innerHTML = `
+                            <td style="padding:0.75rem 1rem; font-weight:600; color:#ffffff; word-break:break-all;">${file.key}</td>
+                            <td style="padding:0.75rem 1rem; color:var(--text-secondary); font-family:var(--font-mono);">${(file.size / 1024).toFixed(2)} KB</td>
+                            <td style="padding:0.75rem 1rem; color:var(--text-muted); font-family:var(--font-mono);">${file.last_modified}</td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                    container.appendChild(listTable);
+                })
+                .catch(err => {
+                    container.innerHTML = `<div style="padding:1rem; color:#ef4444; text-align:center; font-size:0.85rem;">連線失敗: ${err.toString()}</div>`;
+                });
+        }
+
+        document.getElementById('btn-refresh-s3-list').addEventListener('click', (e) => {
+            e.preventDefault();
+            fetchS3Files();
+        });
+
+        // S3 Upload Form submit handler
+        document.getElementById('s3-upload-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const uploadBtn = document.getElementById('btn-s3-upload');
+            const terminal = document.getElementById('s3-terminal-out');
+            
+            if (fileInput.files.length === 0) return;
+            
+            uploadBtn.disabled = true;
+            terminal.innerHTML = '<span class="loading">正在上傳檔案並執行 S3 存在性驗證歷程...</span>';
+            
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            
+            fetch('/api/s3/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                terminal.innerHTML = '';
+                
+                // Print execution logs
+                if (data.logs && data.logs.length > 0) {
+                    data.logs.forEach(logLine => {
+                        const line = document.createElement('div');
+                        line.className = 'terminal-line';
+                        
+                        if (logLine.startsWith('$')) {
+                            line.innerHTML = `<span class="prompt">$</span> ${logLine.substring(2)}`;
+                        } else if (logLine.includes('Success') || logLine.includes('verified') || logLine.includes('successfully')) {
+                            line.innerHTML = `<span class="json-success">${logLine}</span>`;
+                        } else if (logLine.includes('Error') || logLine.includes('failed')) {
+                            line.innerHTML = `<span class="json-error">${logLine}</span>`;
+                        } else {
+                            line.innerHTML = logLine;
+                        }
+                        terminal.appendChild(line);
+                    });
+                }
+                
+                if (data.status === 'success') {
+                    const statusLine = document.createElement('div');
+                    statusLine.className = 'terminal-line';
+                    statusLine.innerHTML = `<br><span class="json-highlight">✔ 狀態：${data.message}</span>`;
+                    terminal.appendChild(statusLine);
+                    
+                    // Reset input
+                    fileInput.value = '';
+                    dropZoneText.textContent = '點擊此處或拖曳檔案至此進行上傳';
+                    
+                    // Refresh S3 objects list
+                    fetchS3Files();
+                } else {
+                    const statusLine = document.createElement('div');
+                    statusLine.className = 'terminal-line';
+                    statusLine.innerHTML = `<br><span class="json-error">✘ 錯誤：${data.message}</span>`;
+                    terminal.appendChild(statusLine);
+                }
+                uploadBtn.disabled = false;
+            })
+            .catch(err => {
+                terminal.innerHTML = `<span class="json-error">上傳發生網路錯誤: ${err.toString()}</span>`;
+                uploadBtn.disabled = false;
+            });
+        });
     </script>
 </body>
 </html>

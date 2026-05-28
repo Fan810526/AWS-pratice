@@ -8,3 +8,6 @@ MarkupSafe==1.1.1; python_version < '3.0'
 
 # Python 3 compatible versions
 Flask>=2.0.0; python_version >= '3.0'
+boto3>=1.26.0; python_version >= '3.0'
+python-dotenv>=1.0.0; python_version >= '3.0'
+

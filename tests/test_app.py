@@ -83,5 +83,39 @@ class FlaskAppTestCase(unittest.TestCase):
         data_empty = json.loads(response_empty.get_data(as_text=True))
         self.assertEqual(len(data_empty), 0)
 
+    def test_api_cpu_status(self):
+        """測試 CPU 狀態 API 是否正確回傳狀態 JSON 格式"""
+        response = self.client.get('/api/cpu/status')
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.get_data(as_text=True))
+        self.assertIn('active', data)
+        self.assertIn('elapsed', data)
+        self.assertIn('remaining', data)
+        self.assertFalse(data['active'])
+
+    def test_api_cpu_start_stop(self):
+        """測試 CPU 壓力測試啟動與停止 API 控制功能"""
+        # 1. 啟動壓力測試
+        response_start = self.client.post('/api/cpu/start')
+        self.assertEqual(response_start.status_code, 200)
+        data_start = json.loads(response_start.get_data(as_text=True))
+        self.assertEqual(data_start['status'], 'success')
+        self.assertTrue(data_start['data']['active'])
+
+        # 2. 測試重複啟動會報錯 (應回傳 400 status code)
+        response_dup = self.client.post('/api/cpu/start')
+        self.assertEqual(response_dup.status_code, 400)
+
+        # 3. 停止壓力測試
+        response_stop = self.client.post('/api/cpu/stop')
+        self.assertEqual(response_stop.status_code, 200)
+        data_stop = json.loads(response_stop.get_data(as_text=True))
+        self.assertEqual(data_stop['status'], 'success')
+        self.assertFalse(data_stop['data']['active'])
+
+        # 4. 測試重複停止會報錯 (應回傳 400 status code)
+        response_dup_stop = self.client.post('/api/cpu/stop')
+        self.assertEqual(response_dup_stop.status_code, 400)
+
 if __name__ == '__main__':
     unittest.main()

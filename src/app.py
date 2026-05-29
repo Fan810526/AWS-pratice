@@ -271,6 +271,131 @@ def list_s3_files():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+# ==========================================
+# 4. CPU Stress Test Feature
+# ==========================================
+import subprocess
+import threading
+import multiprocessing
+import atexit
+import time
+
+class CPUStresser(object):
+    def __init__(self):
+        self.active = False
+        self.processes = []
+        self.start_time = None
+        self.timer = None
+        self.lock = threading.Lock()
+
+    def start(self, target=0.88):
+        with self.lock:
+            if self.active:
+                return False
+            
+            # Micro-script to spike CPU by running a busy loop for a percentage of each interval
+            script = (
+                "import sys, time\n"
+                "try:\n"
+                "    target = float(sys.argv[1])\n"
+                "except:\n"
+                "    target = 0.88\n"
+                "interval = 0.1\n"
+                "run = interval * target\n"
+                "sleep_time = interval * (1.0 - target)\n"
+                "while True:\n"
+                "    t = time.time()\n"
+                "    while time.time() - t < run:\n"
+                "        _ = 12345.67 * 89.01\n"
+                "    time.sleep(sleep_time)"
+            )
+            
+            try:
+                cores = multiprocessing.cpu_count()
+            except Exception:
+                cores = 4
+                
+            self.processes = []
+            for _ in range(cores):
+                # Start independent Python subprocess to run the CPU load script
+                p = subprocess.Popen([sys.executable, "-c", script, str(target)])
+                self.processes.append(p)
+                
+            self.active = True
+            self.start_time = time.time()
+            
+            # Start timer for 120 seconds to auto stop
+            self.timer = threading.Timer(120.0, self.stop)
+            self.timer.daemon = True
+            self.timer.start()
+            return True
+
+    def stop(self):
+        with self.lock:
+            if not self.active:
+                return False
+            
+            if self.timer:
+                try:
+                    self.timer.cancel()
+                except Exception:
+                    pass
+                self.timer = None
+                
+            for p in self.processes:
+                try:
+                    p.terminate()
+                    p.wait()
+                except Exception:
+                    pass
+            self.processes = []
+            self.active = False
+            self.start_time = None
+            return True
+
+    def get_status(self):
+        with self.lock:
+            elapsed = 0
+            remaining = 0
+            if self.active and self.start_time:
+                elapsed = int(time.time() - self.start_time)
+                remaining = max(0, 120 - elapsed)
+            return {
+                "active": self.active,
+                "elapsed": elapsed,
+                "remaining": remaining
+            }
+
+cpu_stresser = CPUStresser()
+
+@atexit.register
+def cleanup_cpu_stresser():
+    cpu_stresser.stop()
+
+@app.route('/api/cpu/start', methods=['POST'])
+def start_cpu_stress():
+    success = cpu_stresser.start()
+    status = cpu_stresser.get_status()
+    if success:
+        return jsonify({"status": "success", "message": "CPU stress test started", "data": status})
+    else:
+        return jsonify({"status": "error", "message": "CPU stress test is already running", "data": status}), 400
+
+@app.route('/api/cpu/stop', methods=['POST'])
+def stop_cpu_stress():
+    success = cpu_stresser.stop()
+    status = cpu_stresser.get_status()
+    if success:
+        return jsonify({"status": "success", "message": "CPU stress test stopped", "data": status})
+    else:
+        return jsonify({"status": "error", "message": "CPU stress test is not running", "data": status}), 400
+
+@app.route('/api/cpu/status', methods=['GET'])
+def get_cpu_status():
+    status = cpu_stresser.get_status()
+    return jsonify(status)
+
+
 if __name__ == '__main__':
     print("==================================================")
     print("  Starting Flask application on port 19191...     ")

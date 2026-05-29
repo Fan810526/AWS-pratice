@@ -295,7 +295,7 @@ class CPUStresser(object):
             
             # Micro-script to spike CPU by running a busy loop for a percentage of each interval
             script = (
-                "import sys, time\n"
+                "import sys, time, hashlib\n"
                 "try:\n"
                 "    target = float(sys.argv[1])\n"
                 "except:\n"
@@ -303,10 +303,11 @@ class CPUStresser(object):
                 "interval = 0.1\n"
                 "run = interval * target\n"
                 "sleep_time = interval * (1.0 - target)\n"
+                "data = b'stress' * 1000\n"
                 "while True:\n"
                 "    t = time.time()\n"
                 "    while time.time() - t < run:\n"
-                "        _ = 12345.67 * 89.01\n"
+                "        _ = hashlib.sha256(data).hexdigest()\n"
                 "    time.sleep(sleep_time)"
             )
             

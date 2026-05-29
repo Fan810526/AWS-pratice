@@ -29,6 +29,7 @@
                 <button class="tab-btn" data-tab="tab-stocks" id="tab-trigger-stocks">即時股票行情</button>
                 <button class="tab-btn" data-tab="tab-jobs" id="tab-trigger-jobs">下午班企業搜尋</button>
                 <button class="tab-btn" data-tab="tab-s3" id="tab-trigger-s3">AWS S3 上傳驗證</button>
+                <button class="tab-btn" data-tab="tab-cpu" id="tab-trigger-cpu">CPU 壓力測試</button>
             </nav>
 
             <div class="status-indicator">
@@ -243,6 +244,99 @@
             </div>
         </div>
 
+        <!-- Tab 5: CPU Stress Test View -->
+        <div id="tab-cpu" class="tab-content">
+            <div class="dashboard-grid">
+                <!-- CPU Stress Control Card -->
+                <section class="glass-card cpu-card">
+                    <div class="tag">SYSTEM UTILITY</div>
+                    <h2>CPU 核心壓力測試</h2>
+                    <p class="section-subtitle">啟動後將會建立與 CPU 核心數相同的背景子程序，使系統 CPU 使用率衝高至 85% ~ 90%。</p>
+                    
+                    <div class="cpu-control-center" style="margin-top: 2rem; display: flex; flex-direction: column; align-items: center; gap: 2rem;">
+                        <!-- Huge Premium Toggle Button -->
+                        <div class="cpu-toggle-wrapper">
+                            <button id="btn-cpu-toggle" class="cpu-toggle-btn">
+                                <div class="cpu-toggle-glow"></div>
+                                <div class="cpu-toggle-content">
+                                    <span class="cpu-toggle-icon">⚡</span>
+                                    <span class="cpu-toggle-text">開始測試</span>
+                                </div>
+                            </button>
+                        </div>
+                        
+                        <!-- Status metrics -->
+                        <div class="cpu-metrics" style="width: 100%; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem;">
+                            <div class="glass-card metric-card" style="padding: 1.25rem; border-radius: 16px; text-align: center; margin: 0;">
+                                <h3 style="font-size: 0.8rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.5rem;">目前狀態</h3>
+                                <div class="metric-value text-safe" id="cpu-status-label" style="font-size: 1.3rem; font-weight: 700; color: #10b981;">安全 / 閒置</div>
+                                <p id="cpu-status-desc" style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">無高負載程式運行</p>
+                            </div>
+                            <div class="glass-card metric-card" style="padding: 1.25rem; border-radius: 16px; text-align: center; margin: 0;">
+                                <h3 style="font-size: 0.8rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.5rem;">目標負載</h3>
+                                <div class="metric-value" style="font-size: 1.3rem; font-weight: 700; color: #ffffff;">85% - 90%</div>
+                                <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">系統核心總使用率</p>
+                            </div>
+                            <div class="glass-card metric-card" style="padding: 1.25rem; border-radius: 16px; text-align: center; margin: 0;">
+                                <h3 style="font-size: 0.8rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.5rem;">剩餘時間</h3>
+                                <div class="metric-value timer-val" id="cpu-timer-label" style="font-size: 1.3rem; font-weight: 700; color: var(--text-secondary); font-family: var(--font-mono);">00:00</div>
+                                <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">2 分鐘後自動取消</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- CPU Progress Ring / Info -->
+                <section class="glass-card cpu-info-card" style="display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 1.5rem; padding: 2rem;">
+                    <div class="section-header" style="border-bottom: none; padding-bottom: 0; width: 100%; text-align: center;">
+                        <h3 style="font-size: 1.2rem; font-weight: 700; margin: 0; color: #ffffff;">壓力測試倒數</h3>
+                        <p class="section-subtitle" style="font-size: 0.8rem; margin-top: 0.25rem;">自動安全防護計時器</p>
+                    </div>
+                    <div class="cpu-info-content" style="display: flex; flex-direction: column; align-items: center; gap: 1.5rem; width: 100%;">
+                        <div class="progress-ring-container" style="position: relative; display: flex; justify-content: center; align-items: center; width: 120px; height: 120px;">
+                            <svg class="progress-ring" width="120" height="120" style="transform: rotate(-90deg); transform-origin: 50% 50%;">
+                                <circle class="progress-ring__circle-bg" stroke="rgba(255,255,255,0.05)" stroke-width="8" fill="transparent" r="50" cx="60" cy="60"/>
+                                <circle class="progress-ring__circle" id="cpu-progress-circle" stroke="var(--accent-blue)" stroke-width="8" fill="transparent" r="50" cx="60" cy="60" style="stroke-dasharray: 314.16; stroke-dashoffset: 314.16; transition: stroke-dashoffset 0.3s ease; stroke-linecap: round;"/>
+                            </svg>
+                            <div class="progress-ring-text" id="cpu-progress-text" style="position: absolute; font-size: 1.5rem; font-weight: 700; font-family: var(--font-mono); color: #ffffff;">0%</div>
+                        </div>
+                        <div class="cpu-rules-list" style="display: flex; flex-direction: column; gap: 1rem; width: 100%;">
+                            <div class="rule-item" style="display: flex; gap: 0.75rem; align-items: flex-start; text-align: left;">
+                                <span class="rule-bullet" style="color: var(--accent-blue); font-size: 1rem;">✦</span>
+                                <div class="rule-desc" style="display: flex; flex-direction: column;">
+                                    <strong style="font-size: 0.85rem; color: #ffffff;">安全防護鎖</strong>
+                                    <span style="font-size: 0.8rem; color: var(--text-secondary); line-height: 1.4;">測試最長執行 2 分鐘（120 秒），倒數結束後會自動釋放所有 CPU 資源。</span>
+                                </div>
+                            </div>
+                            <div class="rule-item" style="display: flex; gap: 0.75rem; align-items: flex-start; text-align: left;">
+                                <span class="rule-bullet" style="color: var(--accent-blue); font-size: 1rem;">✦</span>
+                                <div class="rule-desc" style="display: flex; flex-direction: column;">
+                                    <strong style="font-size: 0.85rem; color: #ffffff;">隨時手動取消</strong>
+                                    <span style="font-size: 0.8rem; color: var(--text-secondary); line-height: 1.4;">測試期間可隨時再次點擊大按鈕，立即停止壓力測試，CPU 將會瞬間降回正常水位。</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- CPU Stress Console Log -->
+                <section class="glass-card terminal-card" style="grid-column: 1 / 3;">
+                    <div class="terminal-header">
+                        <div class="terminal-dots">
+                            <span class="dot red"></span>
+                            <span class="dot yellow"></span>
+                            <span class="dot green"></span>
+                        </div>
+                        <span class="terminal-title">cpu-stress-monitor -- console</span>
+                        <span class="terminal-port" id="console-cpu-status" style="background: rgba(16,185,129,0.15); color: #10b981; border-color: rgba(16,185,129,0.3);">SAFE</span>
+                    </div>
+                    <div class="terminal-body" id="cpu-terminal-out">
+                        <span class="comment">// 點擊上方「開始測試」按鈕，系統將會建立高負載子程序，並於此日誌記錄即時運行狀況...</span>
+                    </div>
+                </section>
+            </div>
+        </div>
+
         <!-- Footer -->
         <footer class="footer">
             <p>© 2026 Python 2.7 Flask App Dashboard. Designed with elegance.</p>
@@ -269,6 +363,13 @@
                     startStockTimer();
                 } else {
                     stopStockTimer();
+                }
+                
+                if (targetTab === 'tab-cpu') {
+                    fetchCpuStatus();
+                    startCpuPolling();
+                } else {
+                    stopCpuPolling();
                 }
 
                 if (targetTab === 'tab-jobs') {
@@ -704,6 +805,163 @@
                 terminal.innerHTML = `<span class="json-error">上傳發生網路錯誤: ${err.toString()}</span>`;
                 uploadBtn.disabled = false;
             });
+        });
+
+        // --- 6. CPU Stress Test Tab Logic ---
+        let cpuPollInterval = null;
+        let wasStressing = false;
+
+        function startCpuPolling() {
+            if (cpuPollInterval) clearInterval(cpuPollInterval);
+            cpuPollInterval = setInterval(fetchCpuStatus, 1000);
+        }
+
+        function stopCpuPolling() {
+            if (cpuPollInterval) {
+                clearInterval(cpuPollInterval);
+                cpuPollInterval = null;
+            }
+        }
+
+        function fetchCpuStatus() {
+            fetch('/api/cpu/status')
+                .then(res => res.json())
+                .then(data => {
+                    updateCpuUI(data);
+                })
+                .catch(err => {
+                    console.error("Failed to fetch CPU status:", err);
+                });
+        }
+
+        function updateCpuUI(data) {
+            const toggleBtn = document.getElementById('btn-cpu-toggle');
+            const statusLabel = document.getElementById('cpu-status-label');
+            const statusDesc = document.getElementById('cpu-status-desc');
+            const timerLabel = document.getElementById('cpu-timer-label');
+            const consoleStatus = document.getElementById('console-cpu-status');
+            const progressCircle = document.getElementById('cpu-progress-circle');
+            const progressText = document.getElementById('cpu-progress-text');
+            const toggleText = toggleBtn.querySelector('.cpu-toggle-text');
+
+            if (data.active) {
+                if (!wasStressing) {
+                    addCpuLog("CPU stress test active. Target system load: 88% across all cores.", "success");
+                    wasStressing = true;
+                }
+
+                toggleBtn.classList.add('stressing');
+                toggleText.textContent = "停止測試";
+                
+                statusLabel.textContent = "壓力測試中";
+                statusLabel.style.color = "#ff5e3a";
+                statusDesc.textContent = "子程序正在以 88% 的工作週期運作...";
+
+                const minutes = Math.floor(data.remaining / 60);
+                const seconds = data.remaining % 60;
+                timerLabel.textContent = (minutes < 10 ? '0' : '') + minutes + ':' + (seconds < 10 ? '0' : '') + seconds;
+                timerLabel.style.color = '#ff5e3a';
+
+                const progressPercent = Math.round(((120 - data.remaining) / 120) * 100);
+                progressText.textContent = progressPercent + '%';
+                const offset = 314.16 - ((120 - data.remaining) / 120) * 314.16;
+                progressCircle.style.strokeDashoffset = offset;
+                progressCircle.style.stroke = "var(--accent-orange)";
+
+                consoleStatus.textContent = "STRESSING";
+                consoleStatus.style.background = "rgba(239,68,68,0.15)";
+                consoleStatus.style.color = "#ef4444";
+                consoleStatus.style.borderColor = "rgba(239,68,68,0.3)";
+
+                if (data.remaining % 10 === 0 && data.remaining > 0) {
+                    addCpuLog("High load active - Remaining time: " + data.remaining + " seconds...", "info");
+                }
+            } else {
+                if (wasStressing) {
+                    addCpuLog("CPU stress test stopped. CPU resources successfully released.", "info");
+                    wasStressing = false;
+                }
+
+                toggleBtn.classList.remove('stressing');
+                toggleText.textContent = "開始測試";
+
+                statusLabel.textContent = "安全 / 閒置";
+                statusLabel.style.color = "#10b981";
+                statusDesc.textContent = "無高負載程式運行";
+
+                timerLabel.textContent = "00:00";
+                timerLabel.style.color = "var(--text-secondary)";
+
+                progressText.textContent = '0%';
+                progressCircle.style.strokeDashoffset = 314.16;
+                progressCircle.style.stroke = "var(--accent-blue)";
+
+                consoleStatus.textContent = "SAFE";
+                consoleStatus.style.background = "rgba(16,185,129,0.15)";
+                consoleStatus.style.color = "#10b981";
+                consoleStatus.style.borderColor = "rgba(16,185,129,0.3)";
+            }
+        }
+
+        function addCpuLog(message, type) {
+            const terminal = document.getElementById('cpu-terminal-out');
+            const now = new Date();
+            const timeStr = now.toTimeString().split(' ')[0];
+            const logLine = document.createElement('div');
+            logLine.className = 'terminal-line';
+            
+            let content = '';
+            if (type === 'command') {
+                content = `<span class="prompt">$</span> ${message}`;
+            } else if (type === 'success') {
+                content = `[${timeStr}] <span class="json-success">✔ ${message}</span>`;
+            } else if (type === 'error') {
+                content = `[${timeStr}] <span class="json-error">✘ ${message}</span>`;
+            } else {
+                content = `[${timeStr}] ${message}`;
+            }
+            
+            logLine.innerHTML = content;
+            terminal.appendChild(logLine);
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+
+        document.getElementById('btn-cpu-toggle').addEventListener('click', function() {
+            const toggleBtn = this;
+            const isRunning = toggleBtn.classList.contains('stressing');
+            
+            toggleBtn.disabled = true;
+            setTimeout(() => { toggleBtn.disabled = false; }, 800);
+
+            if (!isRunning) {
+                addCpuLog("POST /api/cpu/start", "command");
+                fetch('/api/cpu/start', { method: 'POST' })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            updateCpuUI(data.data);
+                        } else {
+                            addCpuLog(data.message, "error");
+                        }
+                    })
+                    .catch(err => {
+                        addCpuLog("Failed to connect to API: " + err.toString(), "error");
+                    });
+            } else {
+                addCpuLog("POST /api/cpu/stop", "command");
+                fetch('/api/cpu/stop', { method: 'POST' })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            updateCpuUI(data.data);
+                        } else {
+                            addCpuLog(data.message, "error");
+                        }
+                    })
+                    .catch(err => {
+                        addCpuLog("Failed to connect to API: " + err.toString(), "error");
+                    });
+            }
         });
     </script>
 </body>
